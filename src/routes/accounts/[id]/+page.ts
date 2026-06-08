@@ -1,6 +1,6 @@
 import {db, type Transaction} from '$lib/db';
 export async function load({ params }) {
-  console.log("LOADER PARAMS:", params);
+  //console.log("LOADER PARAMS:", params);
 
   const account = await db.accounts.get(params.id);
   if (!account) {

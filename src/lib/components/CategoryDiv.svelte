@@ -3,19 +3,17 @@
     let {categoryName, currentBalances} : { categoryName: string; currentBalances: CurrentBalance[] } = $props();
 </script>
 
-<div class="category-div">
-  <h2>{categoryName}</h2>
-  <p>Total Balance: ${currentBalances.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}</p>
+<table class="category-div">
+  <thead><tr><th colspan="2">{categoryName}</th> <th>  ${currentBalances.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}</th></tr></thead>
+  <tbody>
+    {#each currentBalances as b}
+      <tr>
+        <td>{b.account.name}</td>
+        <td>${b.amount.toLocaleString()}</td>
+        <td>at {new Date(b.timestamp).toLocaleString()}</td>
+        <td><a href={`/accounts/${b.account.id}`}>View Details</a></td>
+      </tr>
+    {/each}
 
-    {#if currentBalances.length === 0}
-        <p>No accounts in this category.</p>
-    {:else}
-        <ul>
-        {#each currentBalances as b}
-            <li>{b.account.name}: ${b.amount.toLocaleString()} (at {new Date(b.timestamp).toLocaleString()}) 
-                <a href={`/accounts/${b.account.id}`}>View Details</a>
-            </li>
-        {/each}
-        </ul>
-    {/if}
-</div>
+  </tbody>
+</table>

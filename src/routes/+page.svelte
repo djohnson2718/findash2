@@ -5,9 +5,9 @@
   import ApexCharts from 'apexcharts'; 
   import type { ApexOptions } from 'apexcharts';
   import CategoryDiv from '$lib/components/CategoryDiv.svelte';
+  import { loadFromSimpleFin, clearSimpleFinData} from '$lib/simplefin';
   
-  let SIMPLE_FIN_API_URL_KEY = 'simpleFinAccessUrl';
-  let SIMPLE_FIN_AUTH_KEY = 'simpleFinAuth';
+
   // Create account form state
   let selectedCategory : CategoryKey = $state('other');
   let accountName : string = $state('');
@@ -79,129 +79,23 @@
     db.balances.add(newBalance);
     loadBalances();
   }
-
-  async function loadFromSimpleFin() {
-    let accessUrl = await db.getSetting(SIMPLE_FIN_API_URL_KEY);
-    let auth = await db.getSetting(SIMPLE_FIN_AUTH_KEY);
-    if (!accessUrl || !auth) {
-      let newAccessUrl = await getSimpleFinAccessUrl();
-      if (!newAccessUrl) {
-        alert('SimpleFin access URL was not sucessfully fetched');
-        return;
-      }
-      else
-      {
-        console.log("got new access url", newAccessUrl);
-        db.setSetting(SIMPLE_FIN_API_URL_KEY, newAccessUrl.url);
-        db.setSetting(SIMPLE_FIN_AUTH_KEY, newAccessUrl.auth);
-      }
-    }
-    else
-    {
-      console.log("found existing access url", accessUrl);
-      const atIndex = accessUrl.indexOf('@');
-      const startTimestamp = 	1778229312;//new Date().getTime() - (30 * 24 * 60 * 60 * 1000); // 90 days ago
-      console.log("fetching accounts data from ", startTimestamp);
-      const response = await fetch(accessUrl + '/accounts?version=2&start-date=' + startTimestamp, {
-        method: "GET",
-        headers: {
-          "Authorization": `Basic ${auth}`
-        }
-      });
-      const accountsData = await response.json();
-      console.log("got accounts data", accountsData);
-
-      for (const retrievedAccount of accountsData["accounts"])
-      {
-        let account = await db.accounts.get(retrievedAccount.id);
-        if (!account)        {
-          const newSort = (await db.accounts.count()) + 1;
-          await db.accounts.add({
-            id: retrievedAccount.id,
-            name: retrievedAccount.name,
-            category: Category.Other.id,
-            sort: newSort
-          }
-          );
-        }
-
-        db.newBalance({
-          accountId: retrievedAccount["id"],
-          amount: Number(retrievedAccount["available-balance"]),
-          timestamp: Number(retrievedAccount["balance-date"])
-        });
-
-        for (const retrievedTransaction of retrievedAccount["transactions"])
-        {
-            await db.putTransaction({
-              id: retrievedTransaction.id,
-              accountId: retrievedAccount.id,
-              amount: Number(retrievedTransaction.amount),
-              timestamp: Number(retrievedTransaction.posted),
-              description: retrievedTransaction.description,
-              payee: retrievedTransaction.payee
-            });
-          }
-        }
-      }
-
-    }
-  
-
-  async function getSimpleFinAccessUrl() : Promise<{url: string, auth: string} | null> {
-    const setupToken = prompt('Please enter your SimpleFin API setup token:');
-    if (!setupToken) {
-      return null;
-    }
-    const claimUrl = atob(setupToken);
-
-    const response = await fetch(claimUrl, {
-      method: "POST",
-      headers: {
-        "Content-Length": "0"
-      }
-    });
-
-    const fullAccessUrl = await response.text();
-    const atIndex = fullAccessUrl.indexOf('@');
-    if (atIndex !== -1) {
-        const accessUrl = "https://" + fullAccessUrl.substring(atIndex + 1);
-        const clientSecret = fullAccessUrl.substring(8, atIndex);
-        const auth = btoa(`${clientSecret}:`);
-        return {"url": accessUrl, "auth": auth};
-      }
-      else
-      {
-        alert('Invalid SimpleFin access URL format');
-        return null;
-      }
-  }
-
-  async function clearSimpleFinData() {
-    await db.setSetting(SIMPLE_FIN_API_URL_KEY, '');
-    await db.setSetting(SIMPLE_FIN_AUTH_KEY, '');
-    alert('SimpleFin data cleared');
-  }
-
-  async function clearAllData() {
-    if (confirm('Are you sure you want to clear all data (not settings)? This action cannot be undone.')) {
-      await db.accounts.clear();
-      await db.balances.clear();
-      await db.transactions.clear();
-      alert('All data cleared');
-    }
-  }
 </script>
 
-<h1>FinDash</h1>
 <p>Welcome to FinDash, your financial dashboard for tracking and managing your finances.</p>
 
-<a href="/accounts/12345">Account page test</a>
+{#each Object.values(Category) as category (category.id)}
+  <CategoryDiv categoryName={category.name} currentBalances={currentBalances.filter(b => b.account.category === category.id)} />
+{/each}
 
 <div>
-  <button onclick={loadFromSimpleFin}>Get Data from SimpleFin</button>
-  <button onclick={clearSimpleFinData}>Clear SimpleFin Credentials</button>
-  <button onclick={clearAllData}>Clear All Data</button>
+  <label for="chart">Chart:</label>
+  <div id="chart" bind:this={chartDiv} style="width:50%;"></div>
+</div>
+
+<div>
+  <button class="modern-button" onclick={loadFromSimpleFin}>Get Data from SimpleFin</button>
+  <button class="modern-button" onclick={clearSimpleFinData}>Clear SimpleFin Credentials</button>
+  <button class="modern-button" onclick={db.clearAllData}>Clear All Data</button>
 </div>
 
 <h2>Create a New Account</h2>
@@ -221,15 +115,8 @@
 </div>
 
 <div>
-  <button onclick={createAccount}>Create Account</button>
+  <button class="modern-button" onclick={createAccount}>Create Account</button>
 </div>
-
-
-{#each Object.values(Category) as category (category.id)}
-  <CategoryDiv categoryName={category.name} currentBalances={currentBalances.filter(b => b.account.category === category.id)} />
-{/each}
-
-
 
 <h2>Create a balance snapshot</h2>
 
@@ -254,10 +141,7 @@
 </div>
 
 <div>
-  <button onclick={createBalanceSnapshot}>Create Balance Snapshot</button>
+  <button class="modern-button" onclick={createBalanceSnapshot}>Create Balance Snapshot</button>
 </div>
 
-<div>
-  <label for="chart">Chart:</label>
-  <div id="chart" bind:this={chartDiv} style="width:50%;"></div>
-</div>
+
