@@ -10,7 +10,7 @@ export const Category = {
   Other: { id: "other", name: "Other", sort: 6 },
 } as const;
 
-export type CategoryKey = (typeof Category)[keyof typeof Category]["id"];
+export type CategoryId = (typeof Category)[keyof typeof Category]["id"];
 
 export type CurrentBalance = {
   account: Account;
@@ -20,9 +20,10 @@ export type CurrentBalance = {
 
 export interface Account {
   id: string;
-  category: CategoryKey;
+  categoryId: CategoryId;
   name: string;
   sort: number;
+  connectionId: string;
 }
 
 export interface Balance {
@@ -46,37 +47,40 @@ export interface Settings {
   value: string;
 }
 
+export interface Connection {
+  id: String;
+  name: String;
+}
+
 export class AppDB extends Dexie {
   accounts!: Table<Account, string>;
   balances!: Table<Balance, number>;
   transactions!: Table<Transaction, string>;
   settings!: Table<Settings, string>;
+  connections!: Table<Connection, string>;
 
   constructor() {
     super("AppDB");
 
-    this.version(7).stores({
+    this.version(9).stores({
       accounts: "id, category",
       balances: "++id, [accountId+timestamp]",
       transactions: "++id, [accountId+timestamp]",
       settings: "key",
+      connections: "id",
     });
   }
 
-  async clearAllData() {
-    if (
-      confirm(
-        "Are you sure you want to clear all data (not settings)? This action cannot be undone.",
-      )
-    ) {
-      await this.accounts.clear();
-      await this.balances.clear();
-      await this.transactions.clear();
-      alert("All data cleared");
-    }
+  async clearAllData(): Promise<void> {
+      await this.transaction("rw", this.accounts, this.balances, this.transactions, this.connections, async () => {
+        await this.accounts.clear();
+        await this.balances.clear();
+        await this.transactions.clear();
+        await this.connections.clear();
+      });    
   }
 
-  async newAccount(account: Account): Promise<string> {
+  async addAccount(account: Account): Promise<string> {
     return await this.accounts.add(account);
   }
 
@@ -92,7 +96,7 @@ export class AppDB extends Dexie {
       .toArray();
   }
 
-  async newBalance(balance: Balance): Promise<number> {
+  async addBalanceIfMissing(balance: Balance): Promise<number> {
     const existingBalance = await this.balances
       .where("[accountId+timestamp]")
       .equals([balance.accountId, balance.timestamp])
@@ -113,7 +117,7 @@ export class AppDB extends Dexie {
     return setting ? setting.value : undefined;
   }
 
-  async setSetting(key: string, value: string): Promise<void> {
+  async putSetting(key: string, value: string): Promise<void> {
     await this.settings.put({ key, value });
   }
 
@@ -135,6 +139,13 @@ export class AppDB extends Dexie {
       }),
     );
     return currentBalances;
+  }
+
+  async updateAccountCategory(
+    accountId: string,
+    newCategory: CategoryId,
+  ): Promise<void> {
+    await this.accounts.update(accountId, { categoryId: newCategory });
   }
 }
 export const db = new AppDB();

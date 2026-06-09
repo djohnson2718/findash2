@@ -12,8 +12,8 @@ export async function loadFromSimpleFin() {
       return;
     } else {
       console.log("got new access url", newAccessUrl);
-      db.setSetting(SIMPLE_FIN_API_URL_KEY, newAccessUrl.url);
-      db.setSetting(SIMPLE_FIN_AUTH_KEY, newAccessUrl.auth);
+      db.putSetting(SIMPLE_FIN_API_URL_KEY, newAccessUrl.url);
+      db.putSetting(SIMPLE_FIN_AUTH_KEY, newAccessUrl.auth);
     }
   } else {
     console.log("found existing access url", accessUrl);
@@ -32,6 +32,18 @@ export async function loadFromSimpleFin() {
     const accountsData = await response.json();
     console.log("got accounts data", accountsData);
 
+    for (const retrivedConnection of accountsData["connections"])
+    {
+      let conn = await db.connections.get(retrivedConnection.conn_id);
+      if (!conn)
+      {
+        await db.connections.add({
+            id : retrivedConnection.conn_id,
+            name : retrivedConnection.name
+        });
+      }
+    }
+
     for (const retrievedAccount of accountsData["accounts"]) {
       let account = await db.accounts.get(retrievedAccount.id);
       if (!account) {
@@ -39,15 +51,16 @@ export async function loadFromSimpleFin() {
         await db.accounts.add({
           id: retrievedAccount.id,
           name: retrievedAccount.name,
-          category: Category.Other.id,
+          categoryId: Category.Other.id,
           sort: newSort,
+          connectionId : retrievedAccount.conn_id,
         });
       }
 
-      db.newBalance({
+      db.addBalanceIfMissing({
         accountId: retrievedAccount["id"],
         amount: Number(retrievedAccount["available-balance"]),
-        timestamp: Number(retrievedAccount["balance-date"]),
+        timestamp: Number(retrievedAccount["balance-date"])*1000,
       });
 
       for (const retrievedTransaction of retrievedAccount["transactions"]) {
@@ -55,7 +68,7 @@ export async function loadFromSimpleFin() {
           id: retrievedTransaction.id,
           accountId: retrievedAccount.id,
           amount: Number(retrievedTransaction.amount),
-          timestamp: Number(retrievedTransaction.posted),
+          timestamp: Number(retrievedTransaction.posted)*1000,
           description: retrievedTransaction.description,
           payee: retrievedTransaction.payee,
         });
@@ -95,7 +108,7 @@ async function getSimpleFinAccessUrl(): Promise<{
 }
 
 export async function clearSimpleFinData() {
-  await db.setSetting(SIMPLE_FIN_API_URL_KEY, "");
-  await db.setSetting(SIMPLE_FIN_AUTH_KEY, "");
+  await db.putSetting(SIMPLE_FIN_API_URL_KEY, "");
+  await db.putSetting(SIMPLE_FIN_AUTH_KEY, "");
   alert("SimpleFin data cleared");
 }

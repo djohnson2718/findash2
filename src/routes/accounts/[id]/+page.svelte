@@ -1,55 +1,26 @@
 <script lang="ts">
-  const props = $props();
+    import Modal from '$lib/components/Modal.svelte';
+    import { Category } from '$lib/db';
+    import type { Account, CategoryId, Connection, Transaction } from '$lib/db';
+    import {db} from '$lib/db';
+
+  const props : { data :{account: Account; transactions: Transaction[]; connection: Connection; error: string | null;} } = $props();
+  let selectedCategory : CategoryId = $state(Category.Other.id)
+  let changeCatModal: Modal;
+  let addTransModal: Modal; 
+  let addValModal: Modal;
+
+  function saveCategoryChange() {
+    db.updateAccountCategory(props.data.account!.id, selectedCategory).then(() => {
+      alert(`Category changed successfully! ${selectedCategory}`);;
+    }).catch(err => {
+      console.error('Error changing category:', err);
+      alert('Failed to change category. Please try again.');
+    });
+  }
 </script>
-<style>
-    /* Base table styling */
-.custom-table {
-  width: 100%;
-  border-collapse: collapse; /* Merges cell borders into a single clean line */
-  margin: 25px 0;
-  font-size: 16px;
-  font-family: sans-serif;
-  min-width: 400px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-}
 
-/* Header configuration */
-.custom-table thead tr {
-  background-color: #009879;
-  color: #ffffff;
-  text-align: left;
-  font-weight: bold;
-}
-
-/* Padding and spacing for headers and cells */
-.custom-table th,
-.custom-table td {
-  padding: 12px 15px;
-}
-
-/* Zebra striping - colors every alternate row */
-.custom-table tbody tr:nth-of-type(even) {
-  background-color: #f3f3f3;
-}
-
-/* Subtle border at the bottom of each row */
-.custom-table tbody tr {
-  border-bottom: 1px solid #dddddd;
-}
-
-/* Hover effect to highlight the current row */
-.custom-table tbody tr:hover {
-  background-color: #f1f1f1;
-  cursor: pointer;
-}
-
-/* Highlights the final row of the table */
-.custom-table tbody tr:last-of-type {
-  border-bottom: 2px solid #009879;
-}
-</style>
-
-<h1>Account details for { props.data.account.name } </h1>
+<h1>Account details for { props.data.account.name } [{props.data.connection.name}] </h1>
 
 <div>
     <table class="custom-table">
@@ -66,10 +37,42 @@
             <tr>
                 <td>{t.description}</td>
                 <td>${t.amount.toLocaleString()}</td>
-                <td>{new Date(t.timestamp*1000).toLocaleString()}</td>
+                <td>{new Date(t.timestamp).toLocaleString()}</td>
                 <td>{t.timestamp}</td>
             </tr>
         {/each}
     </tbody>
     </table>
 </div>
+
+<div class="menu-container">
+  <details>
+    <summary class="modern-button">Edit</summary>
+    <nav class="fly-up-menu">
+      <ul>
+        <li><button class="modern-button" onclick={() => changeCatModal.showModal()}>Change Category</button></li>
+        <li><button class="modern-button" onclick={() => addTransModal.showModal()}>Add manual transaction</button></li>
+        <li><button class="modern-button" onclick={() => addValModal.showModal()}>Add manual value snapshot</button></li>
+      </ul>
+    </nav>
+  </details>
+</div>
+
+<Modal bind:this={changeCatModal} onSave={saveCategoryChange}>
+  <h2>Change Category</h2>
+   <label for="category">Category:</label>
+  <select id="category" bind:value={selectedCategory}>
+    <option value="">-- Select a category --</option>
+    {#each Object.values(Category) as category (category.id)}
+      <option value={category.id}>{category.name}</option>
+    {/each}
+  </select>  </Modal>
+
+<Modal bind:this={addTransModal} onSave={() => alert("Saved from modal!")}>
+  <h2>Add Manual Transaction</h2>
+  <p>This is the content of the modal.</p>  </Modal>
+
+  <Modal bind:this={addValModal} onSave={() => alert("Saved from modal!")}>
+  <h2>Add Manual Value Snapshot</h2>
+  <p>This is the content of the modal.</p>  </Modal>
+
