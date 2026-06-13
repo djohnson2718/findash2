@@ -1,10 +1,11 @@
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
 }
 
 body {
-  background: linear-gradient(135deg, #4e54c8, #8f94fb);
+  background: linear-gradient(135deg, #deffe6, #41b153);
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
@@ -16,7 +17,8 @@ body {
   font-size: 16px;
   font-weight: 600;
   color: #ffffff;
-  background-color: #3b82f6; /* Modern blue */
+  background-color: #3b82f6;
+  /* Modern blue */
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -33,15 +35,16 @@ body {
   transform: translateY(0);
 }
 
-li > .modern-button {
-    margin: 5px 5px;
+li>.modern-button {
+  margin: 5px 5px;
 }
 
 
-    /* Base table styling */
+/* Base table styling */
 .custom-table {
   width: 100%;
-  border-collapse: collapse; /* Merges cell borders into a single clean line */
+  border-collapse: collapse;
+  /* Merges cell borders into a single clean line */
   margin: 25px 0;
   font-size: 16px;
   font-family: sans-serif;
@@ -58,7 +61,7 @@ li > .modern-button {
 }
 
 .category-table-line {
-background-color: #009879;
+  background-color: #009879;
   color: #ffffff;
   text-align: left;
   font-weight: bold;
@@ -97,7 +100,7 @@ background-color: #009879;
   width: 100%;
   height: 100%;
   text-decoration: none;
-  color:rgba(0, 0, 0, 1);
+  color: rgba(0, 0, 0, 1);
 }
 
 .cell-link:hover {
@@ -110,19 +113,23 @@ background-color: #009879;
 .menu-container {
   position: relative;
   display: inline-block;
-  margin-top: 150px; /* Space for the menu to fly up */
+  margin-top: 150px;
+  /* Space for the menu to fly up */
 }
 
 /* Fly-up menu positioning and animation */
 .fly-up-menu {
   position: absolute;
-  bottom: 100%; /* Sits exactly above the button */
+  bottom: 100%;
+  /* Sits exactly above the button */
   left: 120%;
-  transform: translateX(-50%) translateY(15px); /* Starts slightly hidden/lower */
+  transform: translateX(-50%) translateY(15px);
+  /* Starts slightly hidden/lower */
   visibility: hidden;
   opacity: 0;
   transition: all 0.3s ease-out;
-  margin-bottom: 15px; /* Spacing between button and menu */
+  margin-bottom: 15px;
+  /* Spacing between button and menu */
   z-index: 10;
 }
 
@@ -130,7 +137,8 @@ background-color: #009879;
 details[open] .fly-up-menu {
   visibility: visible;
   opacity: 1;
-  transform: translateX(-50%) translateY(0); /* Slides to original position */
+  transform: translateX(-50%) translateY(0);
+  /* Slides to original position */
 }
 
 /* Menu styling */
@@ -139,7 +147,7 @@ details[open] .fly-up-menu {
   padding: 10px 0;
   margin: 0;
   background-color: #ffffff;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   min-width: 180px;
 }
@@ -155,4 +163,53 @@ details[open] .fly-up-menu {
 
 .fly-up-menu li a:hover {
   background-color: #f1f1f1;
+}
+
+.segmented-control {
+  display: inline-flex;
+  border-radius: 999px;
+  /* overall pill shape */
+  overflow: hidden;
+  /* hide inner corners */
+  border: 1px solid #888;
+}
+
+/* hide the actual radios */
+.segmented-control input[type="radio"] {
+  display: none;
+}
+
+.segmented-control label {
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  user-select: none;
+  background: #f5f5f5;
+  color: #333;
+  border-right: 1px solid #888;
+  font-family: sans-serif;
+  font-size: 0.9rem;
+}
+
+/* remove right border on last segment */
+.segmented-control label:last-of-type {
+  border-right: none;
+}
+
+/* rounded corners only on ends */
+.segmented-control label:first-of-type {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.segmented-control label:last-of-type {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+/* selected (pushed) state */
+.segmented-control input[type="radio"]:checked+label {
+  background: #0078d4;
+  color: white;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+  /* “pushed” look */
 }

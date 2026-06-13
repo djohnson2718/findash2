@@ -1,3 +1,4 @@
+import { invalidateAll } from "$app/navigation";
 import { db, Category } from "./db";
 const SIMPLE_FIN_API_URL_KEY = "simpleFinAccessUrl";
 const SIMPLE_FIN_AUTH_KEY = "simpleFinAuth";
@@ -32,14 +33,12 @@ export async function loadFromSimpleFin() {
     const accountsData = await response.json();
     console.log("got accounts data", accountsData);
 
-    for (const retrivedConnection of accountsData["connections"])
-    {
+    for (const retrivedConnection of accountsData["connections"]) {
       let conn = await db.connections.get(retrivedConnection.conn_id);
-      if (!conn)
-      {
+      if (!conn) {
         await db.connections.add({
-            id : retrivedConnection.conn_id,
-            name : retrivedConnection.name
+          id: retrivedConnection.conn_id,
+          name: retrivedConnection.name
         });
       }
     }
@@ -53,14 +52,14 @@ export async function loadFromSimpleFin() {
           name: retrievedAccount.name,
           categoryId: Category.Other.id,
           sort: newSort,
-          connectionId : retrievedAccount.conn_id,
+          connectionId: retrievedAccount.conn_id,
         });
       }
 
       db.addBalanceIfMissing({
         accountId: retrievedAccount["id"],
         amount: Number(retrievedAccount["available-balance"]),
-        timestamp: Number(retrievedAccount["balance-date"])*1000,
+        timestamp: Number(retrievedAccount["balance-date"]) * 1000,
       });
 
       for (const retrievedTransaction of retrievedAccount["transactions"]) {
@@ -68,13 +67,14 @@ export async function loadFromSimpleFin() {
           id: retrievedTransaction.id,
           accountId: retrievedAccount.id,
           amount: Number(retrievedTransaction.amount),
-          timestamp: Number(retrievedTransaction.posted)*1000,
+          timestamp: Number(retrievedTransaction.posted) * 1000,
           description: retrievedTransaction.description,
           payee: retrievedTransaction.payee,
         });
       }
     }
   }
+  // doesn't seem to work? invalidateAll();
 }
 
 async function getSimpleFinAccessUrl(): Promise<{

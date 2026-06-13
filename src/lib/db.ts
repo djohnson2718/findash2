@@ -16,6 +16,7 @@ export type CurrentBalance = {
   account: Account;
   amount: number;
   timestamp: number;
+  change: number;
 };
 
 export interface Account {
@@ -62,22 +63,22 @@ export class AppDB extends Dexie {
   constructor() {
     super("AppDB");
 
-    this.version(9).stores({
+    this.version(11).stores({
       accounts: "id, category",
       balances: "++id, [accountId+timestamp]",
-      transactions: "++id, [accountId+timestamp]",
+      transactions: "id, [accountId+timestamp]",
       settings: "key",
       connections: "id",
     });
   }
 
   async clearAllData(): Promise<void> {
-      await this.transaction("rw", this.accounts, this.balances, this.transactions, this.connections, async () => {
-        await this.accounts.clear();
-        await this.balances.clear();
-        await this.transactions.clear();
-        await this.connections.clear();
-      });    
+    await this.transaction("rw", this.accounts, this.balances, this.transactions, this.connections, async () => {
+      await this.accounts.clear();
+      await this.balances.clear();
+      await this.transactions.clear();
+      await this.connections.clear();
+    });
   }
 
   async addAccount(account: Account): Promise<string> {
@@ -108,8 +109,30 @@ export class AppDB extends Dexie {
     return await this.balances.add(balance);
   }
 
+  async addManualBalance(balance: Balance) {
+    let existingBalance;
+    do {
+      existingBalance = await this.balances
+        .where("[accountId+timestamp]")
+        .equals([balance.accountId, balance.timestamp])
+        .first();
+      if (existingBalance) {
+        balance.timestamp += 1;
+      }
+    } while (existingBalance);
+    return await this.balances.add(balance);
+  }
+
   async putTransaction(transaction: Transaction): Promise<string> {
     return await this.transactions.put(transaction);
+  }
+
+  async addManualTransaction(transaction: Omit<Transaction, "id">): Promise<string> {
+    const fullTransaction: Transaction = {
+      id: crypto.randomUUID(),
+      ...transaction,
+    };
+    return await this.transactions.add(fullTransaction);
   }
 
   async getSetting(key: string): Promise<string | undefined> {
@@ -121,8 +144,10 @@ export class AppDB extends Dexie {
     await this.settings.put({ key, value });
   }
 
-  async getCurrentBalances(): Promise<CurrentBalance[]> {
+  async getCurrentBalances(changeSeconds: number): Promise<CurrentBalance[]> {
     const accounts = await this.accounts.toArray();
+    const nowSeconds = Date.now() / 1000;
+    console.log(nowSeconds, changeSeconds, nowSeconds - changeSeconds);
 
     const currentBalances = await Promise.all(
       accounts.map(async (account) => {
@@ -131,10 +156,25 @@ export class AppDB extends Dexie {
           .between([account.id, Dexie.minKey], [account.id, Dexie.maxKey])
           .last();
 
+
+        let prevBalance = await this.balances
+          .where("[accountId+timestamp]")
+          .between([account.id, Dexie.minKey], [account.id, nowSeconds - changeSeconds])
+          .last();
+
+
+        console.log(account.name);
+
+        console.log("latest balance ", latestBalance, "prev balance", prevBalance);
+        const change = latestBalance ?
+          (latestBalance.amount - (prevBalance ? prevBalance.amount : 0)) :
+          0;
+
         return {
           account: account,
           amount: latestBalance ? latestBalance.amount : 0,
           timestamp: latestBalance ? latestBalance.timestamp : 0,
+          change: change
         };
       }),
     );
@@ -146,6 +186,13 @@ export class AppDB extends Dexie {
     newCategory: CategoryId,
   ): Promise<void> {
     await this.accounts.update(accountId, { categoryId: newCategory });
+  }
+
+  async updateAccountName(
+    accountId: string,
+    newName: string,
+  ): Promise<void> {
+    await this.accounts.update(accountId, { name: newName });
   }
 }
 export const db = new AppDB();
