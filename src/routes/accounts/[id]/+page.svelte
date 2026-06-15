@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from "$app/paths";
   import { invalidateAll } from "$app/navigation";
   import Modal from "$lib/components/Modal.svelte";
   import { Category } from "$lib/db";
@@ -77,7 +78,7 @@
 <h1>
   Account details for {props.data.account.name} [{props.data.connection.name}]
 </h1>
-<a href="/">Home</a>
+<a href={`${base}/`}>Home</a>
 
 <div>
   <table class="custom-table">
@@ -170,4 +171,4 @@
   <label for="valDate">Date:</label>
   <input type="date" bind:value={newValDate} id="valDate" />
 </Modal>
-<a href="/">Home</a>
+<a href={`${base}/`}>Home</a>

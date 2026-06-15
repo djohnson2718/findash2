@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CurrentBalance } from "$lib/db";
   import { Category } from "$lib/db";
+  import { base } from "$app/paths";
   let { currentBalances }: { currentBalances: CurrentBalance[] } = $props();
 </script>
 
@@ -20,7 +21,7 @@
       {#each currentBalances.filter((b) => b.account.categoryId === category.id) as b}
         <tr>
           <td
-            ><a class="cell-link" href={`/accounts/${b.account.id}`}
+            ><a class="cell-link" href={`${base}/accounts/${b.account.id}`}
               >{b.account.name}</a
             ></td
           >
