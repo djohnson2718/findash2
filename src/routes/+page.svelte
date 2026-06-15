@@ -90,11 +90,6 @@
   }
 </script>
 
-<p>
-  Welcome to FinDash, your financial dashboard for tracking and managing your
-  finances.
-</p>
-
 <SegmentedControl options={timeOptions} bind:selectedOption={lookBackTime} />
 <AccountsTable {currentBalances} />
 
