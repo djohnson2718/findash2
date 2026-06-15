@@ -1,0 +1,24 @@
+{
+  "short_name": "FinDash",
+  "name": "FinDash Financial Dashboard",
+  "description": "Your financial dashboard for tracking and managing your finances.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#deffe6",
+  "theme_color": "#41b153",
+  "display": "standalone",
+  "orientation": "portrait"
+}
