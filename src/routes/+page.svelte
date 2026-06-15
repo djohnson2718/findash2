@@ -15,8 +15,6 @@
   let selectedCategoryId: CategoryId = $state("other");
   let accountName: string = $state("");
 
-  //let currentBalances: CurrentBalance[] = $state([]);
-
   // Balance snapshot form state
   let accountId: string = $state("");
   let balance: number = $state(0);
