@@ -8,6 +8,8 @@
   import Modal from "$lib/components/Modal.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import { SECONDS_IN_DAY } from "$lib";
+  import LineChart from "$lib/components/LineChart.svelte";
+  import type { ApexAxisChartSeries } from "apexcharts";
 
   // Create account form state
   let selectedCategoryId: CategoryId = $state("other");
@@ -20,22 +22,43 @@
   let balance: number = $state(0);
   let date: string = $state("");
 
+  let timeOptions = [
+    { name: "1 Day", time: 1 },
+    { name: "7 Days", time: 7 },
+    { name: "30 Days", time: 30 },
+    { name: "90 Days", time: 90 },
+  ];
+
+  let chartTimeOptions = [
+    { name: "7 days", time: 7 },
+    { name: "30 days", time: 30 },
+    { name: "90 days", time: 90 },
+    { name: "180 days", time: 180 },
+    { name: "1 year", time: 365 },
+  ];
+
   let createAccountModal: Modal;
 
-  let lookBackTime: { name: string; time: number } = $state({
-    name: "1 Day",
-    time: SECONDS_IN_DAY,
-  });
+  let lookBackTime: { name: string; time: number } = $state(timeOptions[0]);
+  let chartLookBackTime: { name: string; time: number } = $state(
+    chartTimeOptions[0],
+  );
 
   let currentBalances: CurrentBalance[] = $state([]);
+  let lineSeries: ApexAxisChartSeries = $state([]);
 
   async function loadBalances() {
     currentBalances = await db.getCurrentBalances(lookBackTime.time);
-    console.log("loaded balances", $state.snapshot(currentBalances));
   }
-
   $effect(() => {
     loadBalances();
+  });
+
+  async function loadLineChartData() {
+    lineSeries = await db.getCategorySeries(chartLookBackTime.time);
+  }
+  $effect(() => {
+    loadLineChartData();
   });
 
   function createAccount() {
@@ -72,18 +95,17 @@
   finances.
 </p>
 
-<SegmentedControl
-  options={[
-    { name: "1 Day", time: SECONDS_IN_DAY },
-    { name: "7 Days", time: 7 * SECONDS_IN_DAY },
-    { name: "30 Days", time: 30 * SECONDS_IN_DAY },
-    { name: "90 Days", time: 90 * SECONDS_IN_DAY },
-  ]}
-  bind:selectedOption={lookBackTime}
-/>
+<SegmentedControl options={timeOptions} bind:selectedOption={lookBackTime} />
 <AccountsTable {currentBalances} />
 
-<PieChart {currentBalances} width={"400px"} />
+<div class="charts-container">
+  <PieChart {currentBalances} width={"400px"} />
+  <LineChart series={lineSeries} width={"400px"} />
+</div>
+<SegmentedControl
+  options={chartTimeOptions}
+  bind:selectedOption={chartLookBackTime}
+></SegmentedControl>
 
 <div>
   <button class="modern-button" onclick={loadFromSimpleFin}

@@ -59,7 +59,7 @@ export async function loadFromSimpleFin() {
       db.addBalanceIfMissing({
         accountId: retrievedAccount["id"],
         amount: Number(retrievedAccount["available-balance"]),
-        timestamp: Number(retrievedAccount["balance-date"]) * 1000,
+        timestamp: Number(retrievedAccount["balance-date"]),
       });
 
       for (const retrievedTransaction of retrievedAccount["transactions"]) {
@@ -67,7 +67,7 @@ export async function loadFromSimpleFin() {
           id: retrievedTransaction.id,
           accountId: retrievedAccount.id,
           amount: Number(retrievedTransaction.amount),
-          timestamp: Number(retrievedTransaction.posted) * 1000,
+          timestamp: Number(retrievedTransaction.posted),
           description: retrievedTransaction.description,
           payee: retrievedTransaction.payee,
         });

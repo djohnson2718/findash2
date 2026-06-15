@@ -1,3 +1,5 @@
+import { SECONDS_IN_DAY } from "$lib";
+import type { ApexAxisChartSeries } from "apexcharts";
 import Dexie from "dexie";
 import type { Table } from "dexie";
 
@@ -63,9 +65,9 @@ export class AppDB extends Dexie {
   constructor() {
     super("AppDB");
 
-    this.version(11).stores({
+    this.version(12).stores({
       accounts: "id, category",
-      balances: "++id, [accountId+timestamp]",
+      balances: "++id, [accountId+timestamp], timestamp",
       transactions: "id, [accountId+timestamp]",
       settings: "key",
       connections: "id",
@@ -144,9 +146,10 @@ export class AppDB extends Dexie {
     await this.settings.put({ key, value });
   }
 
-  async getCurrentBalances(changeSeconds: number): Promise<CurrentBalance[]> {
+  async getCurrentBalances(changeDays: number): Promise<CurrentBalance[]> {
     const accounts = await this.accounts.toArray();
     const nowSeconds = Date.now() / 1000;
+    const changeSeconds = changeDays * SECONDS_IN_DAY;
     console.log(nowSeconds, changeSeconds, nowSeconds - changeSeconds);
 
     const currentBalances = await Promise.all(
@@ -193,6 +196,61 @@ export class AppDB extends Dexie {
     newName: string,
   ): Promise<void> {
     await this.accounts.update(accountId, { name: newName });
+  }
+
+  async getCategorySeries(days: number): Promise<ApexAxisChartSeries> {
+    const accounts = await this.accounts.toArray();
+    const nowSeconds = Date.now() / 1000;
+    const startSeconds = nowSeconds - (days * 24 * 60 * 60);
+
+    const accountStartBalances: { account: Account, startBalance: number }[] = await Promise.all(
+      accounts.map(async (account) => {
+
+        let startBalance = await this.balances
+          .where("[accountId+timestamp]")
+          .between([account.id, Dexie.minKey], [account.id, startSeconds])
+          .last();
+
+        return { account: account, startBalance: startBalance ? startBalance.amount : 0 };
+
+      }),
+    );
+
+    const recentBalances: Balance[] = await this.balances
+      .where("timestamp")
+      .between(startSeconds, nowSeconds)
+      .toArray();
+
+    recentBalances.sort((a, b) => a.timestamp - b.timestamp);
+
+    let series = [] as ApexAxisChartSeries;
+    for (const cat of Object.values(Category)) {
+      let dataMap: Map<number, number> = new Map<number, number>();
+      let acctToBalanceMap: Map<string, number> = new Map<string, number>();
+      for (const startBal of accountStartBalances) {
+        if (startBal.account.categoryId === cat.id) {
+          acctToBalanceMap.set(startBal.account.id, startBal.startBalance);
+        }
+      }
+      const totStartBalance = acctToBalanceMap.values().reduce((a, b) => a + b, 0);
+      dataMap.set(startSeconds, totStartBalance);
+
+      for (const bal of recentBalances) {
+        if (acctToBalanceMap.has(bal.accountId)) {
+          acctToBalanceMap.set(bal.accountId, bal.amount);
+          const totBal = acctToBalanceMap.values().reduce((a, b) => a + b, 0);
+          dataMap.set(bal.timestamp, totBal);
+        }
+      }
+
+      const totEndBalance = acctToBalanceMap.values().reduce((a, b) => a + b, 0);
+      dataMap.set(nowSeconds, totEndBalance);
+
+      let catSeries: { name: string, data: { x: number, y: number }[] } = { name: cat.name, data: Array.from(dataMap.entries()).map(([x, y]) => ({ x, y })) };
+      series.push(catSeries);
+    }
+    console.log("returned series", series);
+    return series;
   }
 }
 export const db = new AppDB();

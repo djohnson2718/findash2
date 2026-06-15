@@ -77,6 +77,7 @@
 <h1>
   Account details for {props.data.account.name} [{props.data.connection.name}]
 </h1>
+<a href="/">Home</a>
 
 <div>
   <table class="custom-table">
@@ -93,7 +94,7 @@
         <tr>
           <td>{t.description}</td>
           <td>${t.amount.toLocaleString()}</td>
-          <td>{new Date(t.timestamp).toLocaleString()}</td>
+          <td>{new Date(t.timestamp * 1000).toLocaleString()}</td>
           <td>{t.timestamp}</td>
         </tr>
       {/each}
@@ -169,3 +170,4 @@
   <label for="valDate">Date:</label>
   <input type="date" bind:value={newValDate} id="valDate" />
 </Modal>
+<a href="/">Home</a>

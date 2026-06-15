@@ -4,6 +4,7 @@
     import type { Balance, CurrentBalance } from "$lib/db";
     import ApexCharts from "apexcharts";
     import { onDestroy } from "svelte";
+    import { ChartColors } from "$lib";
 
     let {
         currentBalances,
@@ -16,14 +17,7 @@
     const pieChartOptions: ApexOptions = {
         chart: { type: "pie", toolbar: { show: false } },
         labels: Object.values(Category).map((c) => c.name),
-        colors: [
-            "#2c7be5",
-            "#20c997",
-            "#f59e0b",
-            "#9333ea",
-            "#f59e0b",
-            "#6b7280",
-        ],
+        colors: ChartColors,
         legend: { position: "bottom", horizontalAlign: "center" },
         dataLabels: {
             enabled: true,

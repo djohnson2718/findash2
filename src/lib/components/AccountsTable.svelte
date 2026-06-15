@@ -25,7 +25,7 @@
             ></td
           >
           <td>${b.amount.toLocaleString()}</td>
-          <td>at {new Date(b.timestamp).toLocaleString()}</td>
+          <td>at {new Date(b.timestamp * 1000).toLocaleString()}</td>
           <td>${b.change.toLocaleString()}</td>
         </tr>
       {/each}
